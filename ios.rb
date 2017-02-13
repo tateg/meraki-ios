@@ -1,67 +1,100 @@
 # Cute little Cisco IOS clone using Dashboard API
-# Everyone keeps complaining that we don't have a CLI
-# Now shut up
+# Everyone wants a CLI!
 # Written by Tate Galbraith
 # Feb 2017
 
 require 'dashboard-api'
+require 'colorize'
 
-# The first portion will be menu driven because people are idiots
+# The initial API connection can either be prompt driven or bypassed with args on start
+# ARGV[0] = API key
+# ARGV[1] = Organization ID
+# ARGV[2] = Network ID
+# ARGV[3] = Device serial number
+
+def welcome
+	# Super special welcome message
+	puts puts "= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =".yellow
+	puts puts "Welcome to APIOS! The faux IOS clone for Meraki Dashboard.".green
+	puts puts "= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =".yellow
+end
+
+def error_catch
+	# This is for when you don't do something right!
+	puts puts "---ERROR---".red
+	puts puts "Invalid entry or nothing entered!".red
+end
 
 def get_api
-	puts
-	puts "Welcome to APIOS! The faux IOS clone for Meraki Dashboard."
-	print "To get started please enter your API key: "
-	@api_key = gets.chomp
-	puts
+	# Check to see if anything entered as argument first
+	if ARGV[0]
+		@api_key = ARGV[0]
+	else
+		begin
+			print "Please enter your API key: "
+			@api_key = gets.chomp
+			error_catch
+		end
+	end
 end
 
 def init_api
+	# Setup the API object using the input key
 	@api = DashboardAPI.new(@api_key)
 end
 
 def list_organizations
-	@org_list = @api.list_all_organizations
-	puts "Please select an organization from the list below by entering an ID: "
-	@org_list.each do |hash|
-		puts "Name: #{hash["name"]}, ID: #{hash["id"]}"
+	# Check to see if anything entered as argument first	
+	if ARGV[1]
+		@org = ARGV[1]
+	else
+		@org_list = @api.list_all_organizations
+		puts puts "Please select an organization from the list below by entering an ID: "
+		@org_list.each do |hash|
+			puts "Name: #{hash["name"]}, ID: #{hash["id"]}"
+		end
+		print "Enter Organization ID: "
+		@org = gets.chomp
 	end
-	print "Enter Organization ID: "
-	@org = gets.chomp
-	puts
 end
 
 def list_networks
-	@network_list = @api.get_networks(@org)
-	puts "Please select a network from the list below by entering an ID: "
-	@network_list.each do |hash|
-		puts "Name: #{hash["name"]}, ID: #{hash["id"]}"
+	# Check to see if anything entered as argument first
+	if ARGV[2]
+		@network = ARGV[2]
+	else
+		@network_list = @api.get_networks(@org)
+		puts puts "Please select a network from the list below by entering an ID: "
+		@network_list.each do |hash|
+			puts "Name: #{hash["name"]}, ID: #{hash["id"]}"
+		end
+		print "Enter Network ID: "
+		@network = gets.chomp
 	end
-	print "Enter Network ID: "
-	@network = gets.chomp
-	puts
 end
 
 def list_devices
-	@device_list = @api.list_devices_in_network(@network)
-	puts "Please select a device from the list below by entering the serial: "
-	@device_list.each do |hash|
-		puts "Name: #{hash["name"]}, Model: #{hash["id"]}, MAC: #{hash["mac"]}, Serial: #{hash["serial"]}"
+	# Check to see if anything entered as argument first
+	if ARGV[3]
+		@device_serial = ARGV[3]
+	else
+		@device_list = @api.list_devices_in_network(@network)
+		puts puts "Please select a device from the list below by entering the serial: "
+		@device_list.each do |hash|
+			puts "Name: #{hash["name"]}, Model: #{hash["id"]}, MAC: #{hash["mac"]}, Serial: #{hash["serial"]}"
+		end
+		print "Enter Device Serial: "
+		@device_serial = gets.chomp
+		@device = @api.get_single_device(@network, @device_serial)["name"]
 	end
-	print "Enter Device Serial: "
-	@device_serial = gets.chomp
-	@device = @api.get_single_device(@network, @device_serial)["name"]
-	puts
 end
 
 def action_prompt
+	# These are the different types of prompts that IOS uses based on level of config
 	@prompt = "#{@device}>"
 	@prompt_enable = "#{@device}\#"
-	@prompt_config = "#{@device} (config)\#"
-	@prompt_interface = "#{@device} (config-if)\#"
-	puts "You are now in the configuration for the selected device."
-	puts "Try entering some Cisco IOS commands!"
-	puts
+	@prompt_config = "#{@device}(config)\#"
+	@prompt_interface = "#{@device}(config-if)\#"
 end
 
 def action_checks
@@ -99,6 +132,7 @@ def action_checks
 end
 
 # Call em'
+welcome
 get_api
 init_api
 list_organizations
