@@ -3,8 +3,6 @@
 # Now shut up
 # Written by Tate Galbraith
 # Feb 2017
-# API Key: b47331131f446ae4199a8b762d579d65717b1536
-# N_646829496481117942
 
 require 'dashboard-api'
 
