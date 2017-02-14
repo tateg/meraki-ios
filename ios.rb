@@ -19,10 +19,23 @@ def welcome
 	puts puts "= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =".yellow
 end
 
-def error_catch
+def error_catch(type)
 	# This is for when you don't do something right!
-	puts puts "---ERROR---".red
-	puts puts "Invalid entry or nothing entered!".red
+	puts "---ERROR---".red
+	case type
+		when "empty"
+			puts "Value cannot be empty!".red
+		when "wrong_api"
+			puts "API key not valid!".red
+		when "wrong_org"
+			puts "Organization ID not valid!"
+		when "wrong_network"
+			puts "Network ID not valid!"
+		when "wrong_device"
+			puts "Device serial number not valid!"
+		else
+			puts "Something went wrong."
+	end
 end
 
 def get_api
@@ -30,17 +43,27 @@ def get_api
 	if ARGV[0]
 		@api_key = ARGV[0]
 	else
-		begin
+		# Loop waiting for validated input - error if empty
+		loop do
 			print "Please enter your API key: "
 			@api_key = gets.chomp
-			error_catch
+			if @api_key.empty?
+				error_catch("empty")
+			else
+				break
+			end
 		end
 	end
 end
 
 def init_api
 	# Setup the API object using the input key
-	@api = DashboardAPI.new(@api_key)
+	# Catch errors for incorrect API key input
+	begin
+		@api = DashboardAPI.new(@api_key)
+	rescue
+		error_catch("wrong_api")
+	end
 end
 
 def list_organizations
