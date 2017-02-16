@@ -98,7 +98,6 @@ def list_organizations
 	rescue
 		error_catch("wrong_org")
 		if ARGV[1] then exit end
-		list_organizations
 		retry
 	end
 end
@@ -129,7 +128,6 @@ def list_networks
 	rescue
 		error_catch("wrong_network")
 		if ARGV[2] then exit end
-		list_networks
 		retry
 	end
 end
@@ -160,7 +158,6 @@ def list_devices
 	rescue
 		error_catch("wrong_device")
 		if ARGV[3] then exit end
-		list_devices
 		retry
 	end
 end
