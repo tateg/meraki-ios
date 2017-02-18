@@ -72,26 +72,41 @@ def init_api
 	end
 end
 
+def show_org_list
+	# Show list of orgs for selection
+	@org_list = @api.list_all_organizations
+	@org_list.each do |hash|
+		print "\nName: #{hash["name"].green}, ID: #{hash["id"].to_s.green}\n"
+	end
+end
+
+def select_org
+	# Capture input for org ID
+	loop do
+		print "\nEnter Organization ID: "
+		@org = gets.chomp
+		if @org.empty?
+			error_catch("empty")
+		else
+			break
+		end
+	end
+end
+
 def list_organizations
 	begin
-		# Check to see if anything entered as argument first	
+		# Check to see if key and org ID are passed	in
 		if ARGV[1]
 			@org = ARGV[1]
+		elsif ARGV[0] and !ARGV[1]
+			# Return all orgs and exit successfully
+      print "\nAll organizations associated with API key listed below: \n"
+      show_org_list
+      exit(0)
 		else
-			@org_list = @api.list_all_organizations
-			loop do
-				puts puts "Please select an organization from the list below by entering an ID: "
-				@org_list.each do |hash|
-					puts "Name: #{hash["name"].green}, ID: #{hash["id"].to_s.green}"
-				end
-				print "Enter Organization ID: "
-				@org = gets.chomp
-				if @org.empty?
-					error_catch("empty")
-				else
-					break
-				end
-			end
+      print "\nPlease select organization ID from list belwo: \n"
+			show_org_list
+			select_org
 		end
 		# Test the org ID entered by running networks query
 		@api.get_networks(@org)
@@ -102,26 +117,42 @@ def list_organizations
 	end
 end
 
+def show_network_list
+  # Show list of networks for selection
+  @network_list = @api.get_networks(@org)
+  @network_list.each do |hash|
+    print "\nName: #{hash["name"].green}, ID: #{hash["id"].green}\n"
+  end
+end
+
+def select_network
+  # Prompt for network ID
+  loop do
+    print "\nEnter network ID: "
+    @network = gets.chomp
+    if @network.empty?
+      error_catch("empty")
+    else
+      break
+    end
+  end
+end
+
 def list_networks
 	begin
 		# Check to see if anything entered as argument first
 		if ARGV[2]
 			@network = ARGV[2]
-		else
-			loop do
-				@network_list = @api.get_networks(@org)
-				puts puts "Please select a network from the list below by entering an ID: "
-				@network_list.each do |hash|
-					puts "Name: #{hash["name"].green}, ID: #{hash["id"].green}"
-				end
-				print "Enter Network ID: "
-				@network = gets.chomp
-				if @network.empty?
-					error_catch("empty")
-				else
-					break
-				end
-			end
+		elsif ARGV[0-1] and !ARGV[3]
+      # Show list of networks and exit cleanly
+      print "\nList of networks in organization: \n"
+      show_network_list
+      exit(0)
+    else
+      # Show list of networks and prompt
+      print "\nPlease select a network below:  \n"
+      show_network_list
+      select_network
 		end
 		# Test network ID by listing devices
 		@api.list_devices_in_network(@network)
@@ -132,26 +163,42 @@ def list_networks
 	end
 end
 
+def show_device_list
+  # Show list of devices
+  @device_list = @api.list_devices_in_network(@network)
+	@device_list.each do |hash|
+    print "\nName: #{hash["name"].green}, MAC: #{hash["mac"].green}, Serial: #{hash["serial"].green}\n"
+	end
+end
+
+def select_device
+  # Prompt for device selection
+  loop do
+	  print "\nEnter Device Serial: "
+		@device_serial = gets.chomp
+		if @device_serial.empty?
+		  error_catch("empty")
+	  else
+		  break
+		end
+	end
+end
+
 def list_devices
 	begin
 		# Check to see if anything entered as argument first
 		if ARGV[3]
 			@device_serial = ARGV[3]
-		else
-			loop do
-				@device_list = @api.list_devices_in_network(@network)
-				puts puts "Please select a device from the list below by entering the serial: "
-				@device_list.each do |hash|
-					puts "Name: #{hash["name"].green}, MAC: #{hash["mac"].green}, Serial: #{hash["serial"].green}"
-				end
-				print "Enter Device Serial: "
-				@device_serial = gets.chomp
-				if @device_serial.empty?
-					error_catch("empty")
-				else
-					break
-				end
-			end
+		elsif ARGV[0-2] and !ARGV[3]
+      # Show list of devices and exit cleanly
+      print "\nList of devices in network: \n"
+      show_device_list
+      exit(0)
+    else
+      # Show list of devices and prompt for selection
+      print "\nSelect device from list below: \n"
+      show_device_list
+      select_device
 		end
 		# Load device ID from serial number into var - also test validity
 		@device = @api.get_single_device(@network, @device_serial)
@@ -171,38 +218,7 @@ def action_prompt
 end
 
 def action_checks
-	# Seriously needs to be rewritten!!
-	print @prompt
-	loop do
-		@action_input = gets.chomp.downcase
-		if @action_input.include? "en" or "ena" or "enab" or "enabl" or "enable"
-			print @prompt_enable
-			@action_input = gets.chomp.downcase
-			if @action_input.include? "conf t" or "confi t" or "config t" or "config terminal"
-				print @prompt_config
-				@action_input = gets.chomp.downcase
-				if @action_input.include? "int 3"
-					print @prompt_interface
-					@action_input = gets.chomp.downcase
-					if @action_input == "sh" or "shu" or "shut" or "shutdown"
-						@state = {"enabled" => "false"}
-						@api.update_switchport(@device_serial, 3, @state)
-					elsif @action_input == "no sh" or "no shu" or "no shut" or "no shutdown"
-						@state = {"enabled" => "true"}
-						@api.update_switchport(@device_serial, 3, @state)
-					elsif @action_input == "exit"
-						break
-					else
-						print @prompt_interface
-					end
-				end
-			end
-		elsif @action_input.include? "ex" or "exi" or "exit"
-			break
-		else
-			puts "Try entering another command. Type 'help' for more info."
-		end
-	end
+
 end
 
 # Call em'
