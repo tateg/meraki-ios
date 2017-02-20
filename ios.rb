@@ -5,6 +5,8 @@
 
 require 'dashboard-api'
 require 'colorize'
+require 'text'
+require 'curses'
 
 # The initial API connection can either be prompt driven or bypassed with args on start
 # ARGV[0] = API key
@@ -211,20 +213,58 @@ end
 
 def action_prompt
 	# These are the different types of prompts that IOS uses based on level of config
-	@prompt = "#{@device}>"
-	@prompt_enable = "#{@device}\#"
-	@prompt_config = "#{@device}(config)\#"
-	@prompt_interface = "#{@device}(config-if)\#"
+  # Note: Prompt is redrawn for tab completion - IOS does this as well
+  # It cannot be redrawn inline
+
+	@prompt = "#{@device["name"]}>"
+	@prompt_enable = "#{@device["name"]}\#"
+	@prompt_config = "#{@device["name"]}(config)\#"
+	@prompt_interface = "#{@device["name"]}(config-if)\#"
 end
 
-def action_checks
+def distance(first, second)
+  # Measure distance between words to fuzzy match commands similar to IOS
+  @max_dist = 2
+  if Text::Levenshtein.distance(first, second) <= @max_dist
+    return true
+  else
+    return false
+  end
+end
 
+def action_check
+  loop do
+    print @prompt
+    @input = gets.chomp
+    if distance("exit", @input) then exit(0) end
+    if distance("enable", @input) then action_check_enable end
+  end
+end
+
+def action_check_enable
+  loop do
+    print @prompt_enable
+    @input = gets.chomp
+    if distance("exit", @input) then exit(0) end
+    if distance("configure terminal", @input) then action_check_configure end
+  end
+end
+
+def action_check_configure
+  loop do
+    print @prompt_config
+    @input = gets.chomp
+    if distance("exit", @input) then exit(0) end
+  end
 end
 
 # Call em'
+
 welcome
 get_api
 init_api
 list_organizations
 list_networks
 list_devices
+action_prompt
+action_check
