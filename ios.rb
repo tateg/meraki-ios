@@ -21,6 +21,8 @@ def welcome
 	puts puts "= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =".yellow
 end
 
+# === Error handling === #
+
 def error_catch(type)
 	# This is for when you don't do something right!
 	puts "---ERROR---".red
@@ -39,6 +41,8 @@ def error_catch(type)
 			puts "Something went wrong.".red
 	end
 end
+
+# === Iniitial menu driven portion === #
 
 def get_api
 	loop do
@@ -232,12 +236,14 @@ def distance(first, second)
   end
 end
 
+# === Action loops for each prompt section === #
+
 def action_check
   loop do
     print @prompt
     @input = gets.chomp
     if distance("exit", @input) then exit(0) end
-    if distance("enable", @input) then action_check_enable end
+    if distance("enable", @input) then break action_check_enable end
   end
 end
 
@@ -245,17 +251,49 @@ def action_check_enable
   loop do
     print @prompt_enable
     @input = gets.chomp
-    if distance("exit", @input) then exit(0) end
-    if distance("configure terminal", @input) then action_check_configure end
+    if distance("exit", @input) then break action_check end
+    if distance("configure terminal", @input) then break action_check_configure end
   end
 end
 
 def action_check_configure
   loop do
+
     print @prompt_config
     @input = gets.chomp
-    if distance("exit", @input) then exit(0) end
+    @input_all = @input.split(" ")
+
+    if distance("exit", @input) then break action_check_enable end
+
+    # Get interface command with interface number
+    if distance("interface", @input)
+      @input_intnum = @input_all[1].to_i
+      if @input_intnum > 0 then action_check_interface end
+    end
+
   end
+end
+
+def action_check_interface
+  loop do
+    print @prompt_interface
+    @input = gets.chomp
+    if distance("exit", @input) then break action_check_configure end
+    if distance("shutdown", @input) then shutdown_switchport(@device_serial, @input_intnum) end
+    if distance("no shutdown", @input) then enable_switchport(@device_serial, @input_intnum) end
+  end
+end
+
+# === Switchport actions === #
+
+def shutdown_switchport(serial, port)
+  # Disable a switchport on a switch
+  @api.update_switchport(serial, port, {"enabled" => false}) 
+end
+
+def enable_switchport(serial, port)
+  # Enable a switchport on a switch
+  @api.update_switchport(serial, port, {"enabled" => true})
 end
 
 # Call em'
